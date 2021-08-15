@@ -23,8 +23,6 @@ provider:
     lambda: true
     apiGateway: true
 
-  # Use these variables in the functions and resources section below. For example,
-  # ${self:provider.environment.ATTACHMENT_S3_BUCKET}
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
     ATTACHMENT_S3_BUCKET: zulqarnain-serverless-todo-images-${self:provider.stage}
@@ -32,7 +30,6 @@ provider:
     AUTH_0_SECRET: q4PBToHS98Ohe_N3ExZ_Gedjb8oQ0y4C_EHOZpC8KyOU8qYkZgIZXADr_vNqI0kk
 
   logs:
-    # Enable API Gateway logs
     restApi: true
 
   iam:
@@ -50,8 +47,6 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property for performing Actions on DynamoDB
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -66,10 +61,6 @@ functions:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-  # TODO: Configure this function -
-  # Provide iamRoleStatements property. Decide the Actions and AWS Resource.
-  # To refer to an AWS resource defined in the "Resources" section, you can use "Resource: !GetAtt <resource-name>.Arn"
-  # To validate incoming HTTP requests, we have provided the request schemas in function definition below.
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -87,8 +78,6 @@ functions:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements, and request schemas
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
@@ -103,9 +92,6 @@ functions:
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -120,8 +106,6 @@ functions:
           - dynamodb:DeleteItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
-  # TODO: Configure this function
-  # Provide property for setting up CORS, Authorizer, iamRoleStatements
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
@@ -140,16 +124,9 @@ functions:
         Action:
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-#      - Effect: Allow
-#        Action:
-#          - dynamodb:GetItem
-#        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
 resources:
   Resources:
-    # Add necessary AWS resources. You will need at least the following AWS resources
-    # TODO: Fill the properties
-    # Feel free to change the names as you like.
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
@@ -161,7 +138,6 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # TODO: Create a DynamoDB table with local secondary index and a composite key
     TodosTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -178,8 +154,6 @@ resources:
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}
 
-    # TODO: Complete the bucket properties below.
-    # Do not forget to add the CorsConfiguration propoerty
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
