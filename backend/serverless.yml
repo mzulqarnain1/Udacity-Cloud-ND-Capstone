@@ -1,7 +1,6 @@
-# TODO: Change the name of the org
 org: mzulqarnain1
-app: serverless-todo
-service: serverless-todo
+app: cloud-dev-capstone
+service: cloud-dev-capstone
 
 plugins:
   - serverless-webpack
@@ -16,8 +15,8 @@ provider:
   runtime: nodejs12.x
   lambdaHashingVersion: '20201221'
 
-  stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'eu-west-1'}
+  stage: ${opt:stage, 'staging'}
+  region: ${opt:region, 'us-east-1'}
 
   tracing:
     lambda: true
@@ -27,7 +26,8 @@ provider:
     TODOS_TABLE: Todos-${self:provider.stage}
     ATTACHMENT_S3_BUCKET: zulqarnain-serverless-todo-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-    AUTH_0_SECRET: q4PBToHS98Ohe_N3ExZ_Gedjb8oQ0y4C_EHOZpC8KyOU8qYkZgIZXADr_vNqI0kk
+    AUTH_0_SECRET_ID: Auth0Secret-${self:provider.stage}
+    AUTH_0_SECRET_FIELD: Auth0Secret
 
   logs:
     restApi: true
@@ -41,11 +41,19 @@ provider:
             - xray:PutTraceSegments
           Resource: "*"
 
-
 functions:
 
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref Auth0Secret
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+        Resource: !GetAtt KMSKey.Arn
 
   GetTodos:
     handler: src/lambda/http/getTodos.handler
@@ -196,3 +204,37 @@ resources:
                 - s3:PutObject
               Resource: "arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*"
         Bucket: !Ref AttachmentsBucket
+
+    KMSKey:
+      Type: AWS::KMS::Key
+      Properties:
+        Description: KMS Key To Encrypt Auth0 Secret
+        KeyPolicy:
+          Version: '2012-10-17'
+          Id: key-default-1
+          Statement:
+            - Sid: Allow Administration of the key
+              Effect: Allow
+              Principal:
+                AWS:
+                  Fn::Join:
+                    - ':'
+                    - - 'arn:aws:iam:'
+                      - Ref: AWS::AccountId
+                      - 'root'
+              Action:
+                - 'kms:*'
+              Resource:
+                - '*'
+    KMSKeyAlias:
+      Type: AWS::KMS::Alias
+      Properties:
+        AliasName: alias/auth0-key-${self:provider.stage}
+        TargetKeyId: !Ref KMSKey
+
+    Auth0Secret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:provider.environment.AUTH_0_SECRET_ID}
+        Description: Auth0 Secret
+        KmsKeyId: !Ref KMSKey
